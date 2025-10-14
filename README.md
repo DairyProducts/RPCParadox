@@ -1,6 +1,9 @@
 # RPCParadox
 This is a project that implements Discord Rich Presence for Paradox Interactive games using Java. It is still early in development and many intended features are not yet implemented.
 
+![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?label=stable%20release)
+![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?include_prereleases&label=latest%20build&color=orange)
+
 ## Currently Supported Games
 - Stellaris
 - Heart of Iron IV
