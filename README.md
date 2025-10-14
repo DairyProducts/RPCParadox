@@ -13,6 +13,7 @@ This is a project that implements Discord Rich Presence for Paradox Interactive 
 ## Planned Features
 - More detailed Rich Presence information (e.g., current played country, in-game date, war status)
 - Support for additional Paradox games
+- Autostart with Windows
 
 ## Dependencies
 - [Discord Game SDK for Java](https://github.com/JnCrMx/discord-game-sdk4j) - tested with version 1.0.0
@@ -24,6 +25,7 @@ This is a project that implements Discord Rich Presence for Paradox Interactive 
 
 ## Building and Running
 Tested on Windows 11 version 24H2 with Java SE 21.0.4 2024-07-16 LTS.
+Note: Discord and RPCParadox must be open before launching your game.
 
 1. Clone the repository.
 2. Ensure you have the required.
