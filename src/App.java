@@ -4,7 +4,7 @@ import gamehandlers.GameHandler;
  * Main application for RPCParadox - Discord Rich Presence for Paradox games
  * 
  * @author DairyProducts
- * @version 1.0
+ * @version 1.1
  * @since 1.0
  */
 public class App {
@@ -97,7 +97,6 @@ public class App {
     private static void checkForGames() {
         GameHandler detectedGame = gameDetector.detectRunningGame();
         
-        // Game state changed
         if (detectedGame != currentGame) {
             if (detectedGame == null) {
                 if (currentGame != null) {
@@ -111,7 +110,6 @@ public class App {
                 }
             } else {
                 System.out.println("Game detected: " + detectedGame.getGameName());
-                discordRPC.updateActivity(detectedGame);
                 currentGame = detectedGame;
                 
                 if (systemTray != null) {
@@ -119,6 +117,10 @@ public class App {
                     systemTray.showNotification("RPCParadox", "Now tracking " + detectedGame.getGameName());
                 }
             }
+        }
+        
+        if (currentGame != null) {
+            discordRPC.updateActivity(currentGame);
         }
     }
     

@@ -7,7 +7,7 @@ import gamehandlers.GameHandler;
  * Manages Discord Rich Presence connection and updates.
  * 
  * @author DairyProducts
- * @version 1.0
+ * @version 1.1
  * @since 1.0
  */
 public class DiscordRPCManager {
@@ -70,7 +70,6 @@ public class DiscordRPCManager {
             handler.updateActivity(currentActivity);
             core.activityManager().updateActivity(currentActivity);
             
-            System.out.println("Updated Discord RPC for: " + handler.getGameName());
         } catch (Exception e) {
             System.err.println("Failed to update Discord activity: " + e.getMessage());
             e.printStackTrace();
