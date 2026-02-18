@@ -97,7 +97,7 @@ internal sealed class StellarisMemoryScanner : IDisposable
         _scannerThread = new Thread(ScannerLoop)
         {
             Name = "StellarisMemoryScanner",
-            Priority = ThreadPriority.Normal,
+            Priority = ThreadPriority.BelowNormal,
             IsBackground = true
         };
         _scannerThread.Start();
