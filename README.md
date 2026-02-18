@@ -5,6 +5,7 @@ This project previously took the form of a Java application, but was rewritten i
 
 [![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?label=stable%20release)](https://github.com/DairyProducts/RPCParadox/releases)
 [![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?include_prereleases&label=latest%20build&color=orange)](https://github.com/DairyProducts/RPCParadox/releases)
+[![GitHub last commit (branch)](https://img.shields.io/github/last-commit/DairyProducts/RPCParadox/main?label=latest%20commit&color=red)](https://github.com/DairyProducts/RPCParadox/commits/main/)
 
 ## Currently Supported Games
 - Stellaris
