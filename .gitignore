@@ -1,4 +1,31 @@
-/.vscode
-/bin
-/lib
-MANIFEST.MF
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+
+# Visual Studio
+.vs/
+
+# Rider
+.idea/
+
+# NuGet
+*.nupkg
+packages/
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+
+# OS files
+Thumbs.db
+.DS_Store

@@ -1,15 +1,16 @@
 # RPCParadox
-This is a project that implements Discord Rich Presence for Paradox Interactive games using Java. It is still early in development and many intended features are not yet implemented.
+This is a project that implements Discord Rich Presence for Paradox Interactive games. It is developed in C# using the .NET frameowrk. The project is currently in its early stages, with basic functionality implemented and plans for more advanced features in the future.
+
+This project previously took the form of a Java application, but was rewritten in C# to take advantage of the .NET framework and its capabilities for desktop applications. The Java version is still available in the `java-old` branch, but it is no longer maintained and is extremely broken. As in, I don't even want to look at it, that's how big of a mess I made it. That is my fault and I am very sorry.
 
 ![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?label=stable%20release)
 ![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?include_prereleases&label=latest%20build&color=orange)
 
 ## Currently Supported Games
 - Stellaris
-- Heart of Iron IV
 
 ## Current Features
-- Basic Rich Presence functionality (game name, time played, icon)
+- Basic Rich Presence functionality (game name, time played, icon, game date)
 - Automatic detection of supported Paradox games
 - Fun toast message on the RPC card
 
@@ -19,23 +20,29 @@ This is a project that implements Discord Rich Presence for Paradox Interactive 
 - Autostart with Windows
 
 ## Dependencies
-- [Discord Game SDK for Java](https://github.com/JnCrMx/discord-game-sdk4j) - tested with version 1.0.0
-- [Gson](https://github.com/google/gson) - tested with version 2.10.1
-
-## Possible Future Dependencies
-- [JNA](https://mvnrepository.com/artifact/net.java.dev.jna/jna/5.14.0) - Tested with version 5.14.0, may be used for advanced features like reading game memory.
-- [JNA Platform](https://mvnrepository.com/artifact/net.java.dev.jna/jna-platform/5.14.0) - Tested with version 5.14.0, may be used for advanced features like reading game memory.
+- [DiscordRichPresence version 1.5.0.51](https://github.com/Lachee/discord-rpc-csharp) - higher versions currently have a bug where the response from Discord is not properly handled, causing the RPC to not work.
 
 ## Building and Running
-Tested on Windows 11 version 24H2 with Java SE 21.0.4 2024-07-16 LTS.
+Tested on Windows 11 24H2, OS Build 26100.7840, .NET version 9.0.304. Windows is currently the only supported target platform.
 Note: Discord and RPCParadox must be open before launching your game.
 
-1. Clone the repository.
-2. Ensure you have the required.
-3. Compile and build the project using your preferred Java IDE or build tool, ensuring all dependencies and source files are included in the classpath. Alternatively, you can use the command line to compile and run the project. Make sure to replace `path\\to\\` with the actual paths to your files.
-```
-java -cp "path\\to\\bin\\folder;path\\to\\jna-5.14.0.jar;path\\to\\discord-game-sdk4j-1.0.0.jar;path\\to\\jna-platform-5.14.0.jar;path\\to\\gson-2.10.1.jar"
-```
+1. Clone the repository:
+    ```bash
+    git clone github.com/DairyProducts/RPCParadox.git
+    ```
+2. Make sure you have the .NET SDK installed. You can download it from the [official .NET website](https://dotnet.microsoft.com/download).
+
+3. Build the project using the .NET CLI:
+   ```bash
+   dotnet build
+   ```
+   Do this once you have selected the correct directory for the project, which is `RPCParadox`. This will restore the necessary dependencies and compile the application.
+
+4. Run the application, which should appear as an exe file in the `bin/Debug/net9.0` directory. You can also run it directly from the command line:
+   ```bash
+   dotnet run
+   ```
+
 
 ## Contributing
 Feel free to submit issues or fork the repository and submit pull requests. Please ensure that your code includes appropriate documentation. I do plan on eventually implementing all the planned features, but contributions are welcome as they can help speed up the process.
@@ -45,4 +52,3 @@ This project is not affiliated with or endorsed by Paradox Interactive or Discor
 
 ## License
 This project is licensed under the GPL license. See the [LICENSE](LICENSE) file for details.
-See also the [NOTICE](NOTICE.md) file for details on third-party licenses.
