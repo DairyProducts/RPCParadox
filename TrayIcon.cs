@@ -65,6 +65,20 @@ internal sealed class TrayIcon : IDisposable
         };
     }
 
+    /// <summary>
+    /// Shows a desktop toast notification from the tray icon.
+    /// </summary>
+    internal void ShowNotification(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
+    {
+        if (_notifyIcon != null)
+        {
+            _notifyIcon.BalloonTipTitle = title;
+            _notifyIcon.BalloonTipText = message;
+            _notifyIcon.BalloonTipIcon = icon;
+            _notifyIcon.ShowBalloonTip(3000);
+        }
+    }
+
     private static void ShowInfoDialog()
     {
         MessageBox.Show(

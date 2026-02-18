@@ -20,5 +20,5 @@ namespace RPCParadox2;
 
 internal static class AppConstants
 {
-    internal const string Version = "2.0.0-beta.1";
+    internal const string Version = "2.0.0-beta.2";
 }

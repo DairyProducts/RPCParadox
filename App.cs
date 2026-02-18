@@ -33,7 +33,13 @@ internal static class App
         Console.WriteLine("RPCParadox2 - Discord Rich Presence for Paradox Games");
         Console.WriteLine("Press Ctrl+C to exit...\n");
 
-        _richPresence = new RichPresence();
+        _trayIcon = new TrayIcon(onClose: () => Application.Exit());
+        _trayIcon.Show();
+
+        _richPresence = new RichPresence(onNotify: (title, message) =>
+        {
+            _trayIcon?.ShowNotification(title, message);
+        });
 
         Console.CancelKeyPress += (sender, e) =>
         {
@@ -49,8 +55,7 @@ internal static class App
 
         _richPresence.Start();
 
-        _trayIcon = new TrayIcon(onClose: () => Application.Exit());
-        _trayIcon.Show();
+        _trayIcon.ShowNotification("RPCParadox", "Started running in the background");
 
         Application.Run();
 

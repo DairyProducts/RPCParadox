@@ -48,9 +48,11 @@ internal sealed class RichPresence : IDisposable
     private readonly object _lock = new();
     private volatile bool _disposed;
     private DateTime _gameStartTime;
+    private readonly Action<string, string>? _onNotify;
 
-    public RichPresence()
+    public RichPresence(Action<string, string>? onNotify = null)
     {
+        _onNotify = onNotify;
         _mainLoopThread = new Thread(MainLoop)
         {
             Name = "RichPresenceMainLoop",
@@ -126,7 +128,13 @@ internal sealed class RichPresence : IDisposable
                     else
                     {
                         Console.WriteLine("[RichPresence] Game stopped running, disposing handler");
+                        string gameName;
+                        lock (_lock)
+                        {
+                            gameName = _currentHandler?.GameName ?? "Unknown";
+                        }
                         DisposeCurrentHandler();
+                        _onNotify?.Invoke("Game Closed", $"Detached from {gameName}");
                     }
                 }
             }
@@ -159,14 +167,17 @@ internal sealed class RichPresence : IDisposable
                     }
                     
                     string appId;
+                    string gameName;
                     lock (_lock)
                     {
                         _currentHandler = handlerFactory();
                         _gameStartTime = DateTime.UtcNow;
                         appId = _currentHandler.DiscordAppId;
+                        gameName = _currentHandler.GameName;
                     }
                     
                     InitializeDiscordClient(appId);
+                    _onNotify?.Invoke("Game Detected", $"Now attached to {gameName}");
                     
                     return;
                 }
