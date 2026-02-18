@@ -3,8 +3,8 @@ This is a project that implements Discord Rich Presence for Paradox Interactive 
 
 This project previously took the form of a Java application, but was rewritten in C# to take advantage of the .NET framework and its capabilities for desktop applications. The Java version is still available in the `java-old` branch, but it is no longer maintained and is extremely broken. As in, I don't even want to look at it, that's how big of a mess I made it. That is my fault and I am very sorry.
 
-![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?label=stable%20release)
-![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?include_prereleases&label=latest%20build&color=orange)
+[![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?label=stable%20release)](https://github.com/DairyProducts/RPCParadox/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/DairyProducts/RPCParadox?include_prereleases&label=latest%20build&color=orange)](https://github.com/DairyProducts/RPCParadox/releases)
 
 ## Currently Supported Games
 - Stellaris
