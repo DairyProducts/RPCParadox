@@ -16,9 +16,48 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+using System.Reflection;
+
 namespace RPCParadox2;
 
 internal static class AppConstants
-{
-    internal const string Version = "2.0.0-beta.2";
+{   
+
+    private static Assembly asm = Assembly.GetEntryAssembly()!;
+    private static AssemblyInformationalVersionAttribute ?info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+    private static readonly string ver = info?.InformationalVersion ?? "unknown";
+
+    internal static readonly string Version = GetVersion();
+    internal static readonly string ?CommitHash = GetCommitHash();
+    internal static readonly bool DebugBuild = IsDebugBuild();
+
+    private static string GetVersion()
+    {
+        if (ver.Contains('+'))
+        {
+            return ver.Substring(0, ver.IndexOf('+'));
+        }
+        return ver;
+    }
+
+    private static string? GetCommitHash()
+    {
+        if (ver.Contains('+'))
+        {
+            return ver.Substring(ver.IndexOf('+') + 1);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private static bool IsDebugBuild()
+    {
+        bool isDebug = false;
+        #if DEBUG
+        isDebug = true;
+        #endif
+        return isDebug;
+    }
 }

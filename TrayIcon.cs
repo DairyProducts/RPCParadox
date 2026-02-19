@@ -81,8 +81,16 @@ internal sealed class TrayIcon : IDisposable
 
     private static void ShowInfoDialog()
     {
+        string details = $"RPCParadox\nDiscord Rich Presence for Paradox games\n\n";
+        string versionInfo = AppConstants.CommitHash != null
+            ? $"Version {AppConstants.Version}\nCommit {AppConstants.CommitHash}"
+            : $"Version {AppConstants.Version}";
+        if (AppConstants.DebugBuild)
+        {
+            versionInfo += "\nDevelopment/Prerelease Build!";
+        }
         MessageBox.Show(
-            $"RPCParadox\n\nDiscord Rich Presence for Paradox Games.\nVersion {AppConstants.Version}",
+            details + versionInfo,
             "RPCParadox",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);

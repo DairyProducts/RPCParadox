@@ -29,3 +29,6 @@ packages/
 # OS files
 Thumbs.db
 .DS_Store
+
+# Build scripts
+build_scripts/
