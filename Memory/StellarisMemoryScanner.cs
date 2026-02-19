@@ -19,7 +19,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace RPCParadox2.Memory;
 
@@ -60,30 +59,29 @@ internal sealed class StellarisMemoryScanner : IDisposable
     private const uint PROCESS_VM_READ = 0x0010;
     private const uint PROCESS_QUERY_INFORMATION = 0x0400;
     private const uint MEM_COMMIT = 0x1000;
-    private const uint PAGE_READABLE = 0x02 | 0x04 | 0x20 | 0x40; // PAGE_READONLY | PAGE_READWRITE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE
+    private const uint MEM_PRIVATE = 0x20000;
+    private const uint PAGE_READWRITE = 0x04; // heap/stack data only — the date string lives here
 
     #endregion
 
     #region Fields
 
-    private readonly object _lock = new();
+    private const int ScanIntervalMs       = 1000;
+    private const int ValidationDurationMs = 10000;
+    private const int DateStringLength     = 10;
+
+    private readonly object _lock        = new();
     private readonly object _processLock = new();
     private readonly Thread _scannerThread;
     private readonly CancellationTokenSource _cts = new();
+    private readonly byte[] _pollBuffer = new byte[DateStringLength];
 
     private IntPtr _processHandle = IntPtr.Zero;
-    private int _processId;
+    private int    _processId;
     private volatile bool _disposed;
 
-    private IntPtr _dateAddress = IntPtr.Zero;
+    private IntPtr  _dateAddress = IntPtr.Zero;
     private string? _currentDate;
-
-    // Date pattern for Stellaris: YYYY.MM.DD
-    private static readonly Regex DatePattern = new(@"^\d{4}\.\d{2}\.\d{2}$", RegexOptions.Compiled);
-
-    private const int ScanIntervalMs = 1000;
-    private const int ValidationDurationMs = 10000;
-    private const int DateStringLength = 10;
 
     #endregion
 
@@ -96,8 +94,8 @@ internal sealed class StellarisMemoryScanner : IDisposable
     {
         _scannerThread = new Thread(ScannerLoop)
         {
-            Name = "StellarisMemoryScanner",
-            Priority = ThreadPriority.Normal,
+            Name         = "StellarisMemoryScanner",
+            Priority     = ThreadPriority.BelowNormal,
             IsBackground = true
         };
         _scannerThread.Start();
@@ -114,10 +112,7 @@ internal sealed class StellarisMemoryScanner : IDisposable
     /// </summary>
     internal string? GetGameDate()
     {
-        lock (_lock)
-        {
-            return _currentDate;
-        }
+        lock (_lock) return _currentDate;
     }
 
     /// <summary>
@@ -125,36 +120,32 @@ internal sealed class StellarisMemoryScanner : IDisposable
     /// </summary>
     internal bool IsTracking
     {
-        get
-        {
-            lock (_lock)
-            {
-                return _dateAddress != IntPtr.Zero && _currentDate != null;
-            }
-        }
+        get { lock (_lock) return _dateAddress != IntPtr.Zero && _currentDate != null; }
     }
 
     /// <summary>
     /// Returns true if the Stellaris process is still running (soft check).
+    /// Uses the cached process ID to avoid opening a new handle on every call.
     /// </summary>
     internal bool IsProcessRunning
     {
         get
         {
+            int pid;
             lock (_processLock)
             {
-                if (_processHandle == IntPtr.Zero)
-                    return false;
+                if (_processHandle == IntPtr.Zero) return false;
+                pid = _processId;
+            }
 
-                try
-                {
-                    using var process = Process.GetProcessById(_processId);
-                    return !process.HasExited && process.ProcessName.Equals("stellaris", StringComparison.OrdinalIgnoreCase);
-                }
-                catch
-                {
-                    return false;
-                }
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                return !process.HasExited;
+            }
+            catch
+            {
+                return false;
             }
         }
     }
@@ -163,6 +154,10 @@ internal sealed class StellarisMemoryScanner : IDisposable
 
     #region Scanner Thread
 
+    /// <summary>
+    /// Main loop for the background scanner thread. 
+    /// Continuously ensures we are attached to the process and tracks the date address/value.
+    /// </summary>
     private void ScannerLoop()
     {
         while (!_cts.Token.IsCancellationRequested)
@@ -177,38 +172,28 @@ internal sealed class StellarisMemoryScanner : IDisposable
                 }
 
                 IntPtr currentAddress;
-                lock (_lock)
-                {
-                    currentAddress = _dateAddress;
-                }
+                lock (_lock) currentAddress = _dateAddress;
 
                 if (currentAddress != IntPtr.Zero)
                 {
-                    string? date = ReadStringAt(currentAddress, DateStringLength);
-                    
+                    string? date = ReadStringAt(currentAddress);
+
                     if (date != null && IsValidDate(date))
                     {
-                        lock (_lock)
-                        {
-                            _currentDate = date;
-                        }
+                        lock (_lock) _currentDate = date;
                     }
                     else
                     {
                         Console.WriteLine("[StellarisMemoryScanner] Tracked address invalid, rescanning...");
-                        lock (_lock)
-                        {
-                            _dateAddress = IntPtr.Zero;
-                            _currentDate = null;
-                        }
+                        lock (_lock) { _dateAddress = IntPtr.Zero; _currentDate = null; }
                     }
+
+                    Thread.Sleep(ScanIntervalMs);
                 }
                 else
                 {
                     ScanForDateAddress();
                 }
-
-                Thread.Sleep(ScanIntervalMs);
             }
             catch (Exception ex)
             {
@@ -223,75 +208,64 @@ internal sealed class StellarisMemoryScanner : IDisposable
 
     #region Process Management
 
+    /// <summary>
+    /// Ensures we have a valid handle to the Stellaris process. 
+    /// If we already have a handle, checks if it's still valid.
+    /// </summary>
     private bool EnsureProcessAttached()
     {
         lock (_processLock)
         {
-        if (_processHandle != IntPtr.Zero)
-        {
-            try
-            {
-                using var process = Process.GetProcessById(_processId);
-                if (!process.HasExited && process.ProcessName.Equals("stellaris", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // Process no longer exists
-            }
-
-            CloseHandle(_processHandle);
-            _processHandle = IntPtr.Zero;
-        }
-
-        Process[] processes = Process.GetProcessesByName("stellaris");
-        try
-        {
-            if (processes.Length == 0)
-            {
-                return false;
-            }
-
-            var stellaris = processes[0];
-            _processId = stellaris.Id;
-            _processHandle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, false, _processId);
-
-            if (_processHandle == IntPtr.Zero)
-            {
-                Console.WriteLine("[StellarisMemoryScanner] Failed to open process");
-                return false;
-            }
-
-            Console.WriteLine($"[StellarisMemoryScanner] Attached to Stellaris (PID: {_processId})");
-            return true;
-        }
-        finally
-        {
-            foreach (var p in processes)
-            {
-                p.Dispose();
-            }
-        }
-        }
-    }
-
-    private void ClearTrackedData()
-    {
-        lock (_lock)
-        {
-            _dateAddress = IntPtr.Zero;
-            _currentDate = null;
-        }
-
-        lock (_processLock)
-        {
             if (_processHandle != IntPtr.Zero)
             {
+                try
+                {
+                    using var process = Process.GetProcessById(_processId);
+                    if (!process.HasExited && process.ProcessName.Equals("stellaris", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                catch { }
+
                 CloseHandle(_processHandle);
                 _processHandle = IntPtr.Zero;
             }
+
+            Process[] processes = Process.GetProcessesByName("stellaris");
+            try
+            {
+                if (processes.Length == 0) return false;
+
+                _processId     = processes[0].Id;
+                _processHandle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, false, _processId);
+
+                if (_processHandle == IntPtr.Zero)
+                {
+                    Console.WriteLine("[StellarisMemoryScanner] Failed to open process");
+                    return false;
+                }
+
+                Console.WriteLine($"[StellarisMemoryScanner] Attached to Stellaris (PID: {_processId})");
+                return true;
+            }
+            finally
+            {
+                foreach (var p in processes) p.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Clears the currently tracked date address and value, and closes the process handle if open.
+    /// </summary>
+    private void ClearTrackedData()
+    {
+        lock (_lock) { _dateAddress = IntPtr.Zero; _currentDate = null; }
+
+        lock (_processLock)
+        {
+            if (_processHandle == IntPtr.Zero) return;
+            CloseHandle(_processHandle);
+            _processHandle = IntPtr.Zero;
         }
     }
 
@@ -308,16 +282,11 @@ internal sealed class StellarisMemoryScanner : IDisposable
         Console.WriteLine("[StellarisMemoryScanner] Scanning for date address...");
 
         var candidates = new Dictionary<IntPtr, string>();
+        var buffer     = new byte[1048576];
         IntPtr address = IntPtr.Zero;
 
-        const int chunkSize = 1048576; // 1MB chunks
-        byte[] buffer = new byte[chunkSize];
-
-        // For progress reporting and early validation
-        DateTime lastProgressReport = DateTime.MinValue;
+        DateTime lastProgressReport  = DateTime.MinValue;
         DateTime lastEarlyValidation = DateTime.MinValue;
-        const int progressIntervalMs = 1000;
-        const int earlyValidationIntervalMs = 3000;
         long totalBytesScanned = 0;
 
         while (!_cts.Token.IsCancellationRequested)
@@ -327,21 +296,19 @@ internal sealed class StellarisMemoryScanner : IDisposable
 
             DateTime now = DateTime.UtcNow;
 
-            // Report progress every second
-            if ((now - lastProgressReport).TotalMilliseconds >= progressIntervalMs)
+            if ((now - lastProgressReport).TotalMilliseconds >= 1000)
             {
                 Console.WriteLine($"[StellarisMemoryScanner] Scanning... {totalBytesScanned / (1024 * 1024)}MB scanned (found {candidates.Count} candidates)");
                 lastProgressReport = now;
             }
 
-            // Periodically try to validate existing candidates during the scan
-            if (candidates.Count > 0 && (now - lastEarlyValidation).TotalMilliseconds >= earlyValidationIntervalMs)
+            if (candidates.Count > 0 && (now - lastEarlyValidation).TotalMilliseconds >= 3000)
             {
                 lastEarlyValidation = now;
-                var earlyResult = TryValidateCandidates(candidates);
+                IntPtr earlyResult = TryValidateCandidates(candidates);
                 if (earlyResult != IntPtr.Zero)
                 {
-                    string? date = ReadStringAt(earlyResult, DateStringLength);
+                    string? date = ReadStringAt(earlyResult);
                     lock (_lock)
                     {
                         _dateAddress = earlyResult;
@@ -352,21 +319,15 @@ internal sealed class StellarisMemoryScanner : IDisposable
                 }
             }
 
-            // Only scan committed, readable memory
-            if (mbi.State == MEM_COMMIT && (mbi.Protect & PAGE_READABLE) != 0)
+            if (mbi.State == MEM_COMMIT && mbi.Type == MEM_PRIVATE && mbi.Protect == PAGE_READWRITE)
             {
                 long regionSize = (long)mbi.RegionSize;
                 totalBytesScanned += regionSize;
-
                 ScanRegionForDates(mbi.BaseAddress, (int)Math.Min(regionSize, int.MaxValue), candidates, buffer);
-
-                if (candidates.Count >= 1000)
-                    break;
             }
 
             long nextAddress = (long)mbi.BaseAddress + (long)mbi.RegionSize;
-            if (nextAddress <= (long)address)
-                break;
+            if (nextAddress <= (long)address) break;
 
             address = (IntPtr)nextAddress;
         }
@@ -379,20 +340,13 @@ internal sealed class StellarisMemoryScanner : IDisposable
             return;
         }
 
-        // Full validation pass on remaining candidates
         Console.WriteLine($"[StellarisMemoryScanner] Validating {candidates.Count} remaining candidates...");
-        var validatedAddress = ValidateCandidates(candidates);
+        IntPtr validatedAddress = ValidateCandidates(candidates);
 
         if (validatedAddress != IntPtr.Zero)
         {
-            string? date = ReadStringAt(validatedAddress, DateStringLength);
-
-            lock (_lock)
-            {
-                _dateAddress = validatedAddress;
-                _currentDate = date;
-            }
-
+            string? date = ReadStringAt(validatedAddress);
+            lock (_lock) { _dateAddress = validatedAddress; _currentDate = date; }
             Console.WriteLine($"[StellarisMemoryScanner] Tracking date at 0x{validatedAddress:X}: {date}");
         }
         else
@@ -408,27 +362,29 @@ internal sealed class StellarisMemoryScanner : IDisposable
     /// </summary>
     private IntPtr TryValidateCandidates(Dictionary<IntPtr, string> candidates)
     {
-        foreach (var kvp in candidates.ToList())
-        {
-            IntPtr addr = kvp.Key;
-            string originalValue = kvp.Value;
+        var toRemove = new List<IntPtr>();
+        IntPtr result = IntPtr.Zero;
 
-            string? currentValue = ReadStringAt(addr, DateStringLength);
+        foreach (var (addr, originalValue) in candidates)
+        {
+            string? currentValue = ReadStringAt(addr);
 
             if (currentValue == null || !IsValidDate(currentValue))
             {
-                candidates.Remove(addr);
+                toRemove.Add(addr);
                 continue;
             }
 
-            if (CompareDates(currentValue, originalValue) > 0)
+            if (result == IntPtr.Zero && CompareDates(currentValue, originalValue) > 0)
             {
                 Console.WriteLine($"[StellarisMemoryScanner] Candidate 0x{addr:X} progressed: {originalValue} -> {currentValue}");
-                return addr;
+                result = addr;
             }
         }
 
-        return IntPtr.Zero;
+        foreach (var addr in toRemove) candidates.Remove(addr);
+
+        return result;
     }
 
     /// <summary>
@@ -436,36 +392,29 @@ internal sealed class StellarisMemoryScanner : IDisposable
     /// </summary>
     private void ScanRegionForDates(IntPtr baseAddress, int regionSize, Dictionary<IntPtr, string> candidates, byte[] buffer)
     {
-        int chunkSize = buffer.Length;
+        const int overlap = DateStringLength - 1;
+        int offset = 0;
 
-        for (int offset = 0; offset < regionSize; offset += chunkSize)
+        while (offset < regionSize)
         {
-            // Check for cancellation to allow clean shutdown during long scans
-            if (_cts.Token.IsCancellationRequested)
-                return;
+            if (_cts.Token.IsCancellationRequested) return;
 
-            int bytesToRead = Math.Min(chunkSize, regionSize - offset);
+            int bytesToRead    = Math.Min(buffer.Length, regionSize - offset);
             IntPtr readAddress = IntPtr.Add(baseAddress, offset);
 
             if (!ReadProcessMemory(_processHandle, readAddress, buffer, bytesToRead, out int bytesRead) || bytesRead == 0)
+            {
+                offset += bytesToRead;
                 continue;
-
+            }
 
             for (int i = 0; i <= bytesRead - DateStringLength; i++)
             {
-                if (buffer[i + 4] == '.' && buffer[i + 7] == '.')
-                {
-                    string potential = Encoding.ASCII.GetString(buffer, i, DateStringLength);
-                    
-                    if (IsValidDate(potential))
-                    {
-                        candidates[IntPtr.Add(readAddress, i)] = potential;
-                        
-                        if (candidates.Count >= 1000)
-                            return;
-                    }
-                }
+                if (buffer[i + 4] == '.' && buffer[i + 7] == '.' && IsValidDateBytes(buffer, i))
+                    candidates[IntPtr.Add(readAddress, i)] = Encoding.ASCII.GetString(buffer, i, DateStringLength);
             }
+
+            offset += bytesToRead - (bytesToRead < buffer.Length ? 0 : overlap);
         }
     }
 
@@ -476,12 +425,10 @@ internal sealed class StellarisMemoryScanner : IDisposable
     /// </summary>
     private IntPtr ValidateCandidates(Dictionary<IntPtr, string> candidates)
     {
-        if (candidates.Count == 0)
-            return IntPtr.Zero;
+        if (candidates.Count == 0) return IntPtr.Zero;
 
         Console.WriteLine($"[StellarisMemoryScanner] Validating {candidates.Count} candidates...");
 
-        // Check each candidate to see if the date has increased since scan time
         int checksRemaining = ValidationDurationMs / ScanIntervalMs;
 
         while (checksRemaining > 0 && !_cts.Token.IsCancellationRequested)
@@ -489,17 +436,15 @@ internal sealed class StellarisMemoryScanner : IDisposable
             Thread.Sleep(ScanIntervalMs);
             checksRemaining--;
 
-            foreach (var kvp in candidates.ToList())
+            var toRemove = new List<IntPtr>();
+
+            foreach (var (addr, originalValue) in candidates)
             {
-                IntPtr addr = kvp.Key;
-                string originalValue = kvp.Value;
-                
-                string? currentValue = ReadStringAt(addr, DateStringLength);
-                
+                string? currentValue = ReadStringAt(addr);
+
                 if (currentValue == null || !IsValidDate(currentValue))
                 {
-                    // Address no longer valid, remove from consideration
-                    candidates.Remove(addr);
+                    toRemove.Add(addr);
                     continue;
                 }
 
@@ -509,19 +454,12 @@ internal sealed class StellarisMemoryScanner : IDisposable
                     return addr;
                 }
             }
+
+            foreach (var addr in toRemove) candidates.Remove(addr);
         }
 
         Console.WriteLine("[StellarisMemoryScanner] No candidate showed date progression, game may be paused or not in-game");
         return IntPtr.Zero;
-    }
-
-    /// <summary>
-    /// Compares two Stellaris dates in YYYY.MM.DD format.
-    /// Returns positive if date1 > date2, negative if date1 < date2, zero if equal.
-    /// </summary>
-    private static int CompareDates(string date1, string date2)
-    {
-        return string.Compare(date1, date2, StringComparison.Ordinal);
     }
 
     #endregion
@@ -529,16 +467,16 @@ internal sealed class StellarisMemoryScanner : IDisposable
     #region Memory Reading
 
     /// <summary>
-    /// Reads a string from the specified address.
+    /// Reads DateStringLength bytes from the specified address into the shared poll buffer
+    /// and returns a string only if the bytes form a valid date. Returns null on failure.
+    /// Uses the instance-level _pollBuffer to avoid per-call heap allocation.
     /// </summary>
-    private string? ReadStringAt(IntPtr address, int length)
+    private string? ReadStringAt(IntPtr address)
     {
-        byte[] buffer = new byte[length];
-        
-        if (!ReadProcessMemory(_processHandle, address, buffer, length, out int bytesRead) || bytesRead != length)
+        if (!ReadProcessMemory(_processHandle, address, _pollBuffer, DateStringLength, out int bytesRead) || bytesRead != DateStringLength)
             return null;
 
-        return Encoding.ASCII.GetString(buffer);
+        return Encoding.ASCII.GetString(_pollBuffer);
     }
 
     #endregion
@@ -546,49 +484,72 @@ internal sealed class StellarisMemoryScanner : IDisposable
     #region Validation
 
     /// <summary>
-    /// Validates that a string matches the expected Stellaris date format YYYY.MM.DD
+    /// Validates a date directly from a raw byte buffer at the given offset.
+    /// </summary>
+    private static bool IsValidDateBytes(byte[] buf, int offset)
+    {
+        for (int i = 0; i < DateStringLength; i++)
+        {
+            if (i == 4 || i == 7) continue;
+            byte b = buf[offset + i];
+            if (b < '0' || b > '9') return false;
+        }
+
+        int year  = (buf[offset + 0] - '0') * 1000 + (buf[offset + 1] - '0') * 100
+                  + (buf[offset + 2] - '0') * 10   + (buf[offset + 3] - '0');
+        int month = (buf[offset + 5] - '0') * 10   + (buf[offset + 6] - '0');
+        int day   = (buf[offset + 8] - '0') * 10   + (buf[offset + 9] - '0');
+
+        return year >= 2200 && year <= 9999
+            && month >= 1  && month <= 12
+            && day   >= 1  && day   <= 30;
+    }
+
+    /// <summary>
+    /// Validates that a string matches the expected Stellaris date format YYYY.MM.DD.
     /// </summary>
     private static bool IsValidDate(string value)
     {
-        if (!DatePattern.IsMatch(value))
+        if (value.Length != DateStringLength || value[4] != '.' || value[7] != '.')
             return false;
 
-        // Check that year, month, and day are within expected ranges for Stellaris
-        if (int.TryParse(value.Substring(0, 4), out int year) &&
-            int.TryParse(value.Substring(5, 2), out int month) &&
-            int.TryParse(value.Substring(8, 2), out int day))
-        {
-            return year >= 2200 && year <= 9999 && month >= 1 && month <= 12 && day >= 1 && day <= 30;
-        }
-
-        return false;
+        return int.TryParse(value.AsSpan(0, 4), out int year)
+            && int.TryParse(value.AsSpan(5, 2), out int month)
+            && int.TryParse(value.AsSpan(8, 2), out int day)
+            && year >= 2200 && year <= 9999
+            && month >= 1  && month <= 12
+            && day   >= 1  && day   <= 30;
     }
+
+    /// <summary>
+    /// Compares two date strings in the format YYYY.MM.DD. 
+    /// Returns >0 if date1 is later than date2, <0 if earlier, 0 if equal.
+    /// </summary>
+    private static int CompareDates(string date1, string date2) =>
+        string.Compare(date1, date2, StringComparison.Ordinal);
 
     #endregion
 
     #region IDisposable
 
+    /// <summary>
+    /// Disposes the memory scanner, stopping the background thread and releasing resources.
+    /// Safe to call multiple times.
+    /// </summary>
     public void Dispose()
     {
-        if (_disposed)
-            return;
-            
+        if (_disposed) return;
         _disposed = true;
-        
+
         Console.WriteLine("[StellarisMemoryScanner] Disposing...");
 
         _cts.Cancel();
-        
-        if (_scannerThread.IsAlive)
-        {
-            _scannerThread.Join(3000);
-        }
-
+        if (_scannerThread.IsAlive) _scannerThread.Join(3000);
         ClearTrackedData();
-        
         _cts.Dispose();
+
         GC.SuppressFinalize(this);
-        
+
         Console.WriteLine("[StellarisMemoryScanner] Disposed");
     }
 
