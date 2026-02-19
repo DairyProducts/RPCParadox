@@ -10,6 +10,7 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Version>2.0.0-beta.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
