@@ -11,7 +11,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <VersionPrefix>2.0.0</VersionPrefix>
-    <VersionSuffix>beta.2</VersionSuffix>
+    <VersionSuffix>beta.3</VersionSuffix>
   </PropertyGroup>
 
   <ItemGroup>
