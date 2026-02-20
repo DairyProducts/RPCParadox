@@ -53,7 +53,7 @@ internal sealed class TrayIcon : IDisposable
 
         _notifyIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = LoadIconFromResource(),
             Text = "RPCParadox",
             Visible = true,
             ContextMenuStrip = contextMenu
@@ -96,6 +96,25 @@ internal sealed class TrayIcon : IDisposable
             MessageBoxIcon.Information);
     }
 
+    private static Icon LoadIconFromResource()
+    {
+        try
+        {
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var resourceName = "RPCParadox2.assets.icon.ico";
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream != null)
+            {
+                return new Icon(stream);
+            }
+        }
+        catch
+        {
+            Console.WriteLine("[Tray] Tray icon failed to load");
+        }
+        return SystemIcons.Application;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -107,5 +126,7 @@ internal sealed class TrayIcon : IDisposable
             _notifyIcon.Dispose();
             _notifyIcon = null;
         }
+
+        Console.WriteLine("[Tray] Disposed");
     }
 }
