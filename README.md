@@ -53,3 +53,4 @@ This project is not affiliated with or endorsed by Paradox Interactive or Discor
 
 ## License
 This project is licensed under the GPL license. See the [LICENSE](LICENSE) file for details.
+This project uses packages and dependencies that are licensed under the MIT License. See the [NOTICE](NOTICE) file for details.
