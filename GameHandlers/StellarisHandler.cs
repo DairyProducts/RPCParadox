@@ -24,7 +24,7 @@ internal sealed class StellarisHandler : IGameHandler
 {
     private const string DISCORD_APP_ID = "1426478074278580318";
     private const string LARGE_IMAGE = "stellaris";
-    private const string ?SMALL_IMAGE = null;
+    private const string? SMALL_IMAGE = null;
 
     private readonly StellarisMemoryScanner _scanner;
     private readonly CancellationTokenSource _cts = new();
@@ -38,7 +38,7 @@ internal sealed class StellarisHandler : IGameHandler
     public string DiscordAppId => DISCORD_APP_ID;
     public string GameName => "Stellaris";
     public string LargeImageKey => LARGE_IMAGE;
-    public string ?SmallImageKey => SMALL_IMAGE;
+    public string? SmallImageKey => SMALL_IMAGE;
 
     public StellarisHandler()
     {

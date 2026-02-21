@@ -108,11 +108,22 @@ internal sealed class RichPresence : IDisposable
         {
             try
             {
-                if (_currentHandler == null)
+                IGameHandler? handler;
+                lock (_lock)
+                {
+                    handler = _currentHandler;
+                }
+
+                if (handler == null)
                 {
                     DetectAndAttachGame();
                     
-                    if (_currentHandler == null)
+                    lock (_lock)
+                    {
+                        handler = _currentHandler;
+                    }
+                    
+                    if (handler == null)
                     {
                         ClearPresence();
                         Thread.Sleep(GAME_CHECK_INTERVAL_MS);
@@ -120,7 +131,7 @@ internal sealed class RichPresence : IDisposable
                 }
                 else
                 {
-                    if (_currentHandler.IsRunning)
+                    if (handler.IsRunning)
                     {
                         UpdatePresence();
                         Thread.Sleep(STATUS_UPDATE_INTERVAL_MS);
@@ -128,11 +139,7 @@ internal sealed class RichPresence : IDisposable
                     else
                     {
                         Console.WriteLine("[RichPresence] Game stopped running, disposing handler");
-                        string gameName;
-                        lock (_lock)
-                        {
-                            gameName = _currentHandler?.GameName ?? "Unknown";
-                        }
+                        string gameName = handler.GameName;
                         DisposeCurrentHandler();
                         _onNotify?.Invoke("Game Closed", $"Detached from {gameName}");
                     }
@@ -180,11 +187,6 @@ internal sealed class RichPresence : IDisposable
                     _onNotify?.Invoke("Game Detected", $"Now attached to {gameName}");
                     
                     return;
-                }
-                
-                foreach (var p in processes)
-                {
-                    p.Dispose();
                 }
             }
             catch (Exception ex)

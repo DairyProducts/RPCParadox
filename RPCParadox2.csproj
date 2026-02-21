@@ -1,6 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Authors>Derek Li</Authors>
+    <Product>RPCParadox</Product>
+    <Description>A Discord Rich Presence application for Paradox Interactive games.</Description>
+    <Copyright>Copyright (C) 2026 Derek Li</Copyright>
+    <License>GPLv3</License>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
