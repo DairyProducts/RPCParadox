@@ -61,11 +61,12 @@ internal sealed class StellarisHandler : IGameHandler
             {
                 if (gameDate != null)
                 {
+                    _statusLine1 = "In Game";
                     _statusLine2 = $"Date: {gameDate}";
                 }
                 else
                 {
-                    _statusLine1 = "Exploring the Galaxy";
+                    _statusLine1 = "In the Main Menu";
                     _statusLine2 = "";
                 }
             }
