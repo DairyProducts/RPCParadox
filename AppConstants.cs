@@ -21,11 +21,10 @@ using System.Reflection;
 namespace RPCParadox2;
 
 internal static class AppConstants
-{   
-
-    private static Assembly asm = Assembly.GetEntryAssembly()!;
-    private static AssemblyInformationalVersionAttribute ?info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-    private static readonly string ver = info?.InformationalVersion ?? "unknown";
+{
+    private static readonly Assembly _asm = Assembly.GetEntryAssembly()!;
+    private static readonly AssemblyInformationalVersionAttribute? _info = _asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+    private static readonly string _ver = _info?.InformationalVersion ?? "unknown";
 
     internal static readonly string Version = GetVersion();
     internal static readonly string ?CommitHash = GetCommitHash();
@@ -33,18 +32,18 @@ internal static class AppConstants
 
     private static string GetVersion()
     {
-        if (ver.Contains('+'))
+        if (_ver.Contains('+'))
         {
-            return ver.Substring(0, ver.IndexOf('+'));
+            return _ver.Substring(0, _ver.IndexOf('+'));
         }
-        return ver;
+        return _ver;
     }
 
     private static string? GetCommitHash()
     {
-        if (ver.Contains('+'))
+        if (_ver.Contains('+'))
         {
-            return ver.Substring(ver.IndexOf('+') + 1);
+            return _ver.Substring(_ver.IndexOf('+') + 1);
         }
         else
         {

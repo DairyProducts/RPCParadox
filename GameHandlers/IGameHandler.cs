@@ -38,7 +38,7 @@ internal interface IGameHandler : IDisposable
     /// <summary>
     /// Discord small image asset key for this game; optional
     /// </summary>
-    string ?SmallImageKey { get; }
+    string? SmallImageKey { get; }
 
     /// <summary>
     /// Gets the current status lines for Discord Rich Presence
