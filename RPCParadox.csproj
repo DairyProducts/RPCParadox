@@ -5,7 +5,7 @@
     <Product>RPCParadox</Product>
     <Description>A Discord Rich Presence application for Paradox Interactive games.</Description>
     <Copyright>Copyright (C) 2026 Derek Li</Copyright>
-    <License>GPLv3</License>
+    <License>MS-PL</License>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
@@ -15,7 +15,7 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <VersionPrefix>2.0.1</VersionPrefix>
+    <VersionPrefix>2.0.2</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <ApplicationIcon>assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="assets\icon.ico" LogicalName="RPCParadox2.assets.icon.ico" />
+    <EmbeddedResource Include="assets\icon.ico" LogicalName="RPCParadox.assets.icon.ico" />
   </ItemGroup>
 
 </Project>

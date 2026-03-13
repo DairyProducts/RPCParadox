@@ -56,5 +56,8 @@ Feel free to submit issues or fork the repository and submit pull requests. Plea
 This project is not affiliated with or endorsed by Paradox Interactive or Discord. It is solely developed for the purpose of educational and personal use, without the intent of commercial gain. All trademarks and copyrights belong to their respective owners.
 
 ## License
-This project is licensed under the GPL license. See the [LICENSE](LICENSE) file for details.
-This project uses packages and dependencies that are licensed under the MIT License. See the [NOTICE](NOTICE) file for details.
+This project is licensed under the Microsoft Public License (Ms-PL). See the [LICENSE](LICENSE) file for details.
+
+**Previous versions of this project were licensed under the GNU General Public License v3.0 (GPLv3).** Specifically, versions prior to 2.0.2 are licensed under GPLv3, while version 2.0.2 and later are licensed under the MS-PL.
+
+This project uses packages and dependencies that are licensed under other licenses. See the [NOTICE](NOTICE) file for details.
