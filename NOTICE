@@ -1,4 +1,7 @@
-This project uses third party software that are licensed under the MIT License. Compiled binaries that are distributed with this project and the source code of this project itself may contain (possibly modified!) copies or portions of these software, in either compiled or source code form, under the terms of the MIT License.
+This project uses third party software that are licensed under the MIT License.
+Compiled binaries that are distributed with this project and the source code of 
+this project itself may contain (possibly modified!) copies or portions of these
+software, in either compiled or source code form, under the terms of the MIT License.
 
 Below is a list of the applicable packages and dependencies.
 
