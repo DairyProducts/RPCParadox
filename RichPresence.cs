@@ -28,14 +28,14 @@ internal sealed class RichPresence : IDisposable
     private static readonly (string ProcessName, Func<IGameHandler> Factory)[] GameHandlers =
     [
         ("stellaris", () => new StellarisHandler()),
-        // ("hoi4", () => new HOI4Handler()), // Uncomment when HOI4Handler is implemented
+        ("hoi4", () => new HOI4Handler()),
     ];
 
     private DiscordRpcClient? _client;
     private IGameHandler? _currentHandler;
     private readonly CancellationTokenSource _cts = new();
     private readonly Thread _mainLoopThread;
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private volatile bool _disposed;
     private DateTime _gameStartTime;
     private readonly Action<string, string>? _onNotify;
@@ -191,12 +191,12 @@ internal sealed class RichPresence : IDisposable
         if (_client == null || _currentHandler == null)
             return;
 
-        var status = _currentHandler.GetStatus();
+        var (Line1, Line2) = _currentHandler.GetStatus();
 
         var presence = new DiscordRPC.RichPresence
         {
-            Details = status.Line1,
-            State = status.Line2,
+            Details = Line1,
+            State = Line2,
             Timestamps = new Timestamps
             {
                 Start = _gameStartTime
@@ -227,7 +227,7 @@ internal sealed class RichPresence : IDisposable
     {
         lock (_lock)
         {
-            if (_currentHandler != null)
+            if (_currentHandler is not null)
             {
                 _currentHandler.Dispose();
                 _currentHandler = null;
