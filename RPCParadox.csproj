@@ -15,8 +15,8 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <VersionPrefix>2.0.2</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
+    <VersionPrefix>2.1.0</VersionPrefix>
+    <VersionSuffix>beta.1</VersionSuffix>
     <ApplicationIcon>assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
