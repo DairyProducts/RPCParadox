@@ -28,7 +28,7 @@ internal sealed class RichPresence : IDisposable
     private static readonly (string ProcessName, Func<IGameHandler> Factory)[] GameHandlers =
     [
         ("stellaris", () => new StellarisHandler()),
-        // ("hoi4", () => new HOI4Handler()), // Uncomment when HOI4Handler is implemented
+        ("hoi4", () => new HOI4Handler()),
     ];
 
     private DiscordRpcClient? _client;
