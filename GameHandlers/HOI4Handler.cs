@@ -23,7 +23,7 @@ internal sealed class HOI4Handler : IGameHandler
 
     private string _statusLine1 = "Conquering the World";
     private string _statusLine2 = "";
-    private volatile bool _disposed;
+    private int _disposedFlag;
 
     public string DiscordAppId   => DISCORD_APP_ID;
     public string GameName       => "Hearts of Iron IV";
@@ -75,7 +75,7 @@ internal sealed class HOI4Handler : IGameHandler
                 if (gameDate != null)
                 {
                     _statusLine1 = "In Game";
-                    _statusLine2 = $"Date: {FormatDate(gameDate)}";
+                    _statusLine2 = FormatDate(gameDate);
                 }
                 else
                 {
@@ -84,14 +84,8 @@ internal sealed class HOI4Handler : IGameHandler
                 }
             }
 
-            try
-            {
-                Task.Delay(5000, _cts.Token).Wait();
-            }
-            catch (AggregateException)
-            {
+            if (_cts.Token.WaitHandle.WaitOne(5000))
                 break;
-            }
         }
     }
 
@@ -107,10 +101,7 @@ internal sealed class HOI4Handler : IGameHandler
 
     public void Dispose()
     {
-        if (_disposed)
-            return;
-
-        _disposed = true;
+        if (Interlocked.Exchange(ref _disposedFlag, 1) != 0) return;
 
         _cts.Cancel();
 

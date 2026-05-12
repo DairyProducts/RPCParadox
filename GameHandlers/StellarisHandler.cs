@@ -19,11 +19,11 @@ internal sealed class StellarisHandler : IGameHandler
     private readonly StellarisMemoryScanner _scanner;
     private readonly CancellationTokenSource _cts = new();
     private readonly Thread _updateThread;
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     
     private string _statusLine1 = "Exploring the Galaxy";
     private string _statusLine2 = "";
-    private volatile bool _disposed;
+    private int _disposedFlag;
 
     public string DiscordAppId => DISCORD_APP_ID;
     public string GameName => "Stellaris";
@@ -52,7 +52,7 @@ internal sealed class StellarisHandler : IGameHandler
                 if (gameDate != null)
                 {
                     _statusLine1 = "In Game";
-                    _statusLine2 = $"Date: {gameDate}";
+                    _statusLine2 = gameDate;
                 }
                 else
                 {
@@ -61,14 +61,8 @@ internal sealed class StellarisHandler : IGameHandler
                 }
             }
 
-            try
-            {
-                Task.Delay(5000, _cts.Token).Wait();
-            }
-            catch (AggregateException)
-            {
+            if (_cts.Token.WaitHandle.WaitOne(5000))
                 break;
-            }
         }
     }
 
@@ -84,11 +78,8 @@ internal sealed class StellarisHandler : IGameHandler
 
     public void Dispose()
     {
-        if (_disposed)
-            return;
-            
-        _disposed = true;
-        
+        if (Interlocked.Exchange(ref _disposedFlag, 1) != 0) return;
+
         _cts.Cancel();
         
         if (_updateThread.IsAlive)

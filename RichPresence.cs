@@ -35,8 +35,8 @@ internal sealed class RichPresence : IDisposable
     private IGameHandler? _currentHandler;
     private readonly CancellationTokenSource _cts = new();
     private readonly Thread _mainLoopThread;
-    private readonly object _lock = new();
-    private volatile bool _disposed;
+    private readonly Lock _lock = new();
+    private int _disposedFlag;
     private DateTime _gameStartTime;
     private readonly Action<string, string>? _onNotify;
 
@@ -239,11 +239,8 @@ internal sealed class RichPresence : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
-            return;
+        if (Interlocked.Exchange(ref _disposedFlag, 1) != 0) return;
 
-        _disposed = true;
-        
         Console.WriteLine("[RichPresence] Disposing...");
         
         _cts.Cancel();
@@ -254,10 +251,9 @@ internal sealed class RichPresence : IDisposable
         }
         
         DisposeCurrentHandler();
-        
+
         if (_client != null)
         {
-            _client.ClearPresence();
             _client.Dispose();
             _client = null;
         }
